@@ -1,36 +1,40 @@
-# AGENTS.md
+# Agent Instructions
 
-## Project
-Chrome extension for WGU Coda commenting workflows.
+## Default behavior
 
-## Hard constraints
-- Never touch production Coda doc ID: 4YIajnJqvo.
-- Preserve deletion-safe idle behavior: successful empty _Threads read means clear runtime/sidebar/anchors.
-- Do not add broad DOM scans during scroll, pointermove, mousemove, or mutation callbacks.
-- Do not make Coda API writes during normal scroll/navigation.
-- New comments should render local-first before Coda API consistency catches up.
-- Treat Coda DOM ranges/elements as volatile and validate before use.
+Unless I explicitly say otherwise, operate in review-only mode.
 
-## Current priorities
-- Improve performance and reliability.
-- Move toward RuntimeStore + viewport-positioned anchor architecture.
-- Prefer small behavior-preserving refactors before feature work.
+Do not modify GitHub files, Coda docs, Coda pages, Coda tables, Coda rows, Coda columns, comments, controls, or formulas without explicit approval.
 
-## Verification
-- Run JavaScript syntax checks after changing JS.
-- Preserve extension load in Chrome/Chromium.
-- Smoke test:
-  1. Sidebar loads.
-  2. Empty _Threads produces no ghost cards.
-  3. Text/cell comment activation works.
-  4. New comment creates card.
-  5. Card click navigates to anchor.
-  6. No full-page anchor search during ordinary scroll.
+## Coda MCP rules
 
-## Performance goblins
-- TreeWalker/full text indexing.
-- getBoundingClientRect loops.
-- elementsFromPoint on mousemove.
-- MutationObserver callbacks doing real work.
-- Re-rendering all highlights/cards during scroll.
-- Trusting stale DOM ranges.
+You may use Coda MCP read/search tools to understand docs, pages, tables, rows, and related project context.
+
+Never call destructive Coda tools unless I explicitly approve the exact operation.
+
+Destructive tools include:
+- _document_delete
+- _page_delete
+- _table_rows_delete
+- _table_columns_delete
+- _table_delete
+- _table_view_delete
+- _control_delete
+- _comment_delete
+
+Before making any Coda write:
+1. State the exact tool you plan to call.
+2. State the target doc/page/table/row/column.
+3. State the intended change.
+4. Wait for my approval.
+
+## GitHub/repo rules
+
+Before editing files:
+1. Summarize the proposed change.
+2. List the files expected to change.
+3. Wait for my approval.
+
+Do not commit secrets.
+Do not modify extension permissions without explaining why.
+Prefer small, reviewable changes.
