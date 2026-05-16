@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["DOM", "ES2020"],
+    "strict": true,
+    "noEmitOnError": false,
+    "removeComments": false,
+    "outFile": "wgu-core.js",
+    "module": "none",
+    "skipLibCheck": true
+  },
+  "files": [
+    "src/shared/types.ts",
+    "src/shared/logging.ts",
+    "src/shared/ids.ts",
+    "src/config/schema.ts",
+    "src/config/settings.ts",
+    "src/coda/codaClient.ts",
+    "src/coda/sourceDocClient.ts",
+    "src/coda/commentEngineClient.ts",
+    "src/auth/accessResolver.ts",
+    "src/anchors/anchorRegistry.ts",
+    "src/anchors/captureAnchorContext.ts",
+    "src/anchors/textMatcher.ts",
+    "src/anchors/domRangeFinder.ts",
+    "src/anchors/scoring.ts",
+    "src/anchors/resolveAnchor.ts",
+    "src/overlays/textColorRenderer.ts",
+    "src/overlays/marginIconRenderer.ts",
+    "src/overlays/reflow.ts",
+    "src/sidebar/commentCard.ts",
+    "src/sidebar/renderSidebar.ts",
+    "src/sidebar/events.ts",
+    "src/options/optionsPage.ts"
+  ]
+}

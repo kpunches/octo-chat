@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "WGU Coda Comment Assistant",
+  "version": "1.11.1",
+  "description": "Viewport-positioned anchor geometry, position-aware sidebar ordering, and local-first runtime cache.",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://*.coda.io/*",
+    "https://*.wgu.edu/*",
+    "https://coda.io/*",
+    "https://wgu.edu/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/comment-icon.ico"
+      ],
+      "matches": [
+        "https://coda.io/*",
+        "https://*.coda.io/*"
+      ]
+    }
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://coda.io/d/*"
+      ],
+      "js": [
+        "wgu-core.js",
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "options.html",
+  "action": {
+    "default_title": "WGU Coda Comment Assistant"
+  }
+}

@@ -1,0 +1,1696 @@
+
+:root {
+  --wgu-comments-width: 390px;
+  --wgu-comment-blue: #1f5eff;
+  --wgu-comment-yellow: rgba(255, 229, 102, 0.42);
+  --wgu-coda-main-available-width: calc(100vw - var(--wgu-comments-width));
+}
+
+/* 1.9.1: selection shim for read-only/protected Coda table surfaces.
+   This does not make Coda cells editable; it only lets the browser select visible text. */
+html.wgu-coda-selection-mode [role="gridcell"],
+html.wgu-coda-selection-mode [role="gridcell"] *,
+html.wgu-coda-selection-mode [role="cell"],
+html.wgu-coda-selection-mode [role="cell"] *,
+html.wgu-coda-selection-mode [data-testid*="cell"],
+html.wgu-coda-selection-mode [data-testid*="cell"] *,
+html.wgu-coda-selection-mode .wgu-coda-selectable-surface,
+html.wgu-coda-selection-mode .wgu-coda-selectable-surface * {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  cursor: text !important;
+}
+
+/* Non-invasive push panel: no wrapping/reparenting Coda's DOM. */
+html.wgu-comments-panel-open body {
+  transition: padding-right 170ms ease;
+  padding-right: var(--wgu-comments-width) !important;
+  box-sizing: border-box !important;
+}
+
+/* Coda is a SPA with nested shells; this best-effort targeting helps where body padding doesn't. */
+html.wgu-comments-panel-open [role="main"],
+html.wgu-comments-panel-open main,
+html.wgu-comments-panel-open [data-wgu-push-candidate="true"],
+html.wgu-comments-panel-open [data-testid*="doc"],
+html.wgu-comments-panel-open [class*="docContent"],
+html.wgu-comments-panel-open [class*="DocContent"] {
+  max-width: var(--wgu-coda-main-available-width) !important;
+}
+
+html.wgu-comments-panel-open [style*="width: 100vw"],
+html.wgu-comments-panel-open [style*="width:100vw"] {
+  width: var(--wgu-coda-main-available-width) !important;
+  max-width: var(--wgu-coda-main-available-width) !important;
+}
+
+#wgu-coda-comment-tab {
+  position: fixed;
+  z-index: 2147483645;
+  top: 44%;
+  right: 0;
+  transform: translateY(-50%);
+  background: var(--wgu-comment-blue);
+  color: #fff;
+  border: 0;
+  border-radius: 10px 0 0 10px;
+  padding: 10px 8px;
+  font: 700 12px/1.1 system-ui, -apple-system, Segoe UI, sans-serif;
+  writing-mode: vertical-rl;
+  letter-spacing: .03em;
+  cursor: pointer;
+  box-shadow: 0 3px 14px rgba(0,0,0,.24);
+}
+
+#wgu-coda-comment-btn {
+  position: fixed;
+  z-index: 2147483647;
+  background: var(--wgu-comment-blue);
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  box-shadow: 0 3px 14px rgba(0,0,0,.25);
+  font: 13px/1.2 system-ui, -apple-system, Segoe UI, sans-serif;
+  cursor: pointer;
+}
+
+#wgu-cell-comment-trigger {
+  position: fixed;
+  z-index: 2147483646;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  display: none;
+  border: 1px solid rgba(22, 101, 52, .22);
+  border-radius: 999px;
+  background: rgba(240, 253, 244, .96);
+  color: #166534;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, .18);
+  cursor: pointer;
+  font: 15px/1 system-ui, -apple-system, Segoe UI, sans-serif;
+}
+#wgu-cell-comment-trigger:hover {
+  background: #dcfce7;
+  transform: translateY(-1px);
+}
+
+#wgu-coda-comment-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: var(--wgu-comments-width);
+  height: 100vh;
+  z-index: 2147483646;
+  background: white;
+  border-left: 1px solid rgba(0,0,0,.16);
+  box-shadow: -8px 0 28px rgba(0,0,0,.16);
+  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+  transform: translateX(100%);
+  transition: transform 170ms ease;
+  display: flex;
+  flex-direction: column;
+}
+
+html.wgu-comments-panel-open #wgu-coda-comment-sidebar { transform: translateX(0); }
+
+.wgu-sidebar-head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+  display:flex;
+  flex-direction: column;
+  gap: 9px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  backdrop-filter: blur(8px);
+  flex: 0 0 auto;
+}
+.wgu-sidebar-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.wgu-sidebar-head strong { font-size: 14px; color: #0f172a; }
+.wgu-sidebar-actions { display: flex; gap: 5px; }
+.wgu-sidebar-head button {
+  border: 0;
+  border-radius: 8px;
+  padding: 4px 7px;
+  cursor:pointer;
+}
+.wgu-sidebar-actions button { background: rgba(255,255,255,.78); color:#334155; }
+.wgu-sidebar-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+.wgu-nav-chip {
+  font: 650 12px/1 system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #64748b;
+  background: transparent;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  padding: 7px 9px !important;
+  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+.wgu-nav-chip:hover { background: rgba(255,255,255,.68); color: #334155; }
+.wgu-nav-chip.wgu-chip-active {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: rgba(148, 163, 184, 0.45) !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+.wgu-highlights-chip.wgu-highlights-on {
+  background: #dcfce7;
+  border-color: #86efac !important;
+  color: #166534;
+}
+.wgu-highlights-chip.wgu-highlights-off {
+  background: #fee2e2;
+  border-color: #fca5a5 !important;
+  color: #991b1b;
+}
+
+#wgu-comments-list { overflow: auto; padding-bottom: 24px; flex: 1 1 auto; }
+
+
+.wgu-utility-panel {
+  margin: 10px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, .25);
+  border-radius: 14px;
+  background: #fff;
+  color: #1e293b;
+}
+.wgu-utility-panel h3 { margin: 0 0 8px; font-size: 15px; }
+.wgu-utility-panel p { margin: 8px 0; font-size: 12px; color: #475569; line-height: 1.4; }
+.wgu-setting-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 12px 0;
+  padding: 10px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, .22);
+}
+.wgu-setting-row input { margin-top: 2px; }
+.wgu-setting-row small { display:block; margin-top:3px; color:#64748b; line-height:1.35; }
+.wgu-shortcut-card, .wgu-setting-summary {
+  margin-top: 8px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+}
+.wgu-muted-note { color: #64748b !important; }
+.wgu-panel-nudge-note {
+  margin: 8px 10px 0;
+  padding: 8px 10px;
+  background: #fffbe6;
+  border: 1px solid #efe1a0;
+  border-radius: 8px;
+  color: #695500;
+  font-size: 12px;
+}
+
+.wgu-comment-card {
+  margin: 10px;
+  padding: 10px;
+  border: 1px solid #e1e1e1;
+  border-radius: 10px;
+  cursor:pointer;
+  background: #fff;
+  transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+.wgu-comment-card:hover { background: #f8f9ff; }
+.wgu-comment-card.wgu-active-card {
+  border-color: var(--wgu-comment-blue);
+  box-shadow: inset 4px 0 0 var(--wgu-comment-blue), 0 3px 12px rgba(31,94,255,.16);
+  background: #f6f8ff;
+}
+.wgu-comment-title { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+.wgu-comment-meta { color:#666; font-size:12px; margin-bottom:6px; display:flex; gap:5px; flex-wrap:wrap; }
+.wgu-comment-excerpt { font-size: 12px; color:#222; }
+
+.wgu-comment-details {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+  font-size: 12px;
+  color: #333;
+}
+.wgu-comment-detail-row { display: flex; gap: 6px; margin: 3px 0; }
+.wgu-comment-detail-row strong { min-width: 58px; color: #555; }
+
+.wgu-chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f1f3f6;
+  color: #475467;
+}
+.wgu-chip-open { background: #eaf2ff; color: #1f5eff; }
+.wgu-chip-resolved { background: #eaf8ef; color: #0a7431; }
+.wgu-chip-priority { background: #fff7df; color: #896100; }
+
+.wgu-comment-card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+.wgu-comment-card-actions button {
+  border: 0;
+  border-radius: 7px;
+  padding: 5px 8px;
+  font: 700 11px/1 system-ui, -apple-system, Segoe UI, sans-serif;
+  cursor: pointer;
+  background: #eef1ff;
+  color: #1f3fb8;
+}
+.wgu-comment-card-actions button:hover { background: #dfe6ff; }
+.wgu-comment-card-actions button.wgu-danger-lite { background: #fff1ec; color: #a13a1d; }
+.wgu-comment-card-actions button.wgu-success-lite { background: #eaf8ef; color: #0a7431; }
+
+.wgu-reply-box { margin-top: 9px; display: none; }
+.wgu-comment-card.wgu-card-expanded .wgu-reply-box { display: block; }
+.wgu-reply-box textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 68px;
+  border: 1px solid #ccd3e0;
+  border-radius: 8px;
+  padding: 8px;
+  font: 12px/1.35 system-ui, -apple-system, Segoe UI, sans-serif;
+  resize: vertical;
+}
+.wgu-reply-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px; }
+.wgu-reply-actions button {
+  border: 0;
+  border-radius: 7px;
+  padding: 6px 9px;
+  font: 700 11px/1 system-ui, -apple-system, Segoe UI, sans-serif;
+  cursor: pointer;
+}
+.wgu-post-reply { background: var(--wgu-comment-blue); color: white; }
+.wgu-cancel-reply { background: #eee; color: #222; }
+
+.wgu-coda-highlight {
+  background: var(--wgu-comment-yellow);
+  border: 0 !important;
+  border-bottom: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  border-radius: 2px;
+  cursor: pointer;
+  color: #374151 !important;
+  transition: none !important;
+  animation: none !important;
+}
+.wgu-coda-highlight:hover {
+  background: var(--wgu-comment-yellow);
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+.wgu-coda-highlight.wgu-active-highlight {
+  background: var(--wgu-comment-yellow);
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+.wgu-coda-highlight-pulse, .wgu-comment-card-pulse {
+  animation: none !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+@keyframes wguPulse {
+  0%, 35%, 100% { outline: 0 solid transparent; box-shadow: none; }
+}
+.wgu-small-error {
+  padding: 10px 12px;
+  color: #8a1f11;
+  background:#fff3f0;
+  font-size:12px;
+  border-top:1px solid #ffd2c8;
+}
+
+#wgu-comment-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.24);
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+}
+#wgu-comment-modal {
+  width: min(620px, calc(100vw - 40px));
+  background: #fff;
+  color: #222;
+  border-radius: 16px;
+  box-shadow: 0 20px 70px rgba(0,0,0,.35);
+  border: 1px solid rgba(0,0,0,.16);
+  overflow: hidden;
+}
+.wgu-modal-head { padding: 16px 18px; border-bottom: 1px solid #eee; }
+.wgu-modal-head h2 { margin: 0; font-size: 18px; }
+.wgu-modal-body { padding: 16px 18px; }
+.wgu-modal-label { display: block; font-size: 12px; font-weight: 700; color: #555; margin: 12px 0 6px; }
+#wgu-field-select, #wgu-comment-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font: 14px/1.35 system-ui, -apple-system, Segoe UI, sans-serif;
+}
+#wgu-field-select { padding: 8px; }
+#wgu-comment-textarea { min-height: 120px; padding: 10px; resize: vertical; }
+.wgu-selected-preview {
+  background: #fffbe6;
+  border: 1px solid #efe1a0;
+  border-radius: 8px;
+  padding: 10px;
+  max-height: 140px;
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.wgu-modal-actions {
+  display:flex;
+  justify-content:flex-end;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid #eee;
+  background: #fafafa;
+}
+.wgu-modal-actions button {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+#wgu-post-comment { background: var(--wgu-comment-blue); color: #fff; }
+#wgu-cancel-comment { background: #e9e9e9; color: #222; }
+.wgu-modal-hint { font-size: 12px; color: #666; margin-top: 6px; }
+
+
+/* 1.4.2: Precise push-panel hooks based on observed Coda DOM.
+   These are only active while html.wgu-comments-panel-open is present. */
+html.wgu-comments-panel-open #content-container {
+  right: var(--wgu-comments-width) !important;
+  width: auto !important;
+  max-width: calc(100vw - var(--wgu-comments-width)) !important;
+}
+
+html.wgu-comments-panel-open #coda-react-host,
+html.wgu-comments-panel-open body#coda-body {
+  width: calc(100vw - var(--wgu-comments-width)) !important;
+  max-width: calc(100vw - var(--wgu-comments-width)) !important;
+}
+
+html.wgu-comments-panel-open [id^="scroll-container-"][data-wgu-pushed="true"],
+html.wgu-comments-panel-open [id^="grid-drop-target-"][data-wgu-pushed="true"],
+html.wgu-comments-panel-open #document-root-route[data-wgu-pushed="true"],
+html.wgu-comments-panel-open [data-wgu-pushed="true"] {
+  box-sizing: border-box !important;
+}
+
+/* Keep the sidebar from participating in any broad app-container rules. */
+#wgu-coda-comment-sidebar,
+#wgu-coda-comment-sidebar * {
+  max-width: none;
+}
+
+
+/* 1.4.3: optimistic/pending card state */
+.wgu-comment-card.wgu-pending-card {
+  border-style: dashed;
+  opacity: .92;
+}
+.wgu-chip-pending {
+  background: #fff7df;
+  color: #896100;
+}
+
+
+/* 1.4.4: reply/history UX */
+.wgu-chat-history {
+  margin-top: 10px;
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+  display: none;
+}
+
+.wgu-comment-card.wgu-active-card .wgu-chat-history,
+.wgu-comment-card.wgu-card-expanded .wgu-chat-history {
+  display: block;
+}
+
+.wgu-chat-history-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  color: #555;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.wgu-chat-history-body {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #222;
+  background: #fafafa;
+  border: 1px solid #ececec;
+  border-radius: 8px;
+  padding: 8px;
+  max-height: 190px;
+  overflow: auto;
+  white-space: pre-wrap;
+  user-select: text;
+  cursor: text;
+}
+
+.wgu-chat-history-body[readonly] {
+  pointer-events: auto;
+}
+
+.wgu-reply-box {
+  cursor: default;
+}
+
+
+/* 1.4.5: optimistic reply sync state */
+.wgu-comment-card.wgu-reply-syncing {
+  border-color: #e0b400;
+}
+.wgu-reply-sync-note {
+  display: none;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #896100;
+}
+.wgu-comment-card.wgu-reply-syncing .wgu-reply-sync-note {
+  display: block;
+}
+
+
+/* 1.4.6: inactive cards stay compact. Reply/history only show on the active card. */
+.wgu-reply-box,
+.wgu-chat-history {
+  display: none !important;
+}
+
+.wgu-comment-card.wgu-active-card.wgu-card-expanded .wgu-reply-box,
+.wgu-comment-card.wgu-active-card .wgu-chat-history {
+  display: block !important;
+}
+
+/* Make the reply field feel owned by the extension, not Coda underneath it. */
+.wgu-reply-box textarea {
+  caret-color: auto;
+  position: relative;
+  z-index: 1;
+}
+
+
+/* 1.4.7: cleaned card layout with editable stage/priority */
+.wgu-card-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.wgu-card-control label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  color: #667085;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  margin-bottom: 4px;
+}
+
+.wgu-card-control select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font: 700 12px/1.2 system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #344054;
+}
+
+.wgu-topic-text {
+  line-height: 1.35;
+}
+
+.wgu-comment-detail-row.wgu-topic-row {
+  align-items: flex-start;
+}
+
+.wgu-comment-card-actions {
+  margin-top: 11px;
+}
+
+.wgu-status-syncing {
+  opacity: .75;
+}
+
+
+/* 1.4.8: priority visual normalization.
+   Coda values still store the official text, but the extension shows our preferred color semantics. */
+.wgu-priority-select.wgu-priority-critical {
+  border-color: #f97066;
+  background: #fff1f0;
+  color: #912018;
+}
+
+.wgu-priority-select.wgu-priority-important {
+  border-color: #32d583;
+  background: #ecfdf3;
+  color: #05603a;
+}
+
+.wgu-priority-select.wgu-priority-normal {
+  border-color: #7cd4fd;
+  background: #f0f9ff;
+  color: #026aa2;
+}
+
+.wgu-priority-select.wgu-priority-low {
+  border-color: #d0d5dd;
+  background: #f9fafb;
+  color: #475467;
+}
+
+
+/* 1.5.0: stable extension-owned dropdowns. Native selects were closing when the card rerendered. */
+.wgu-card-control {
+  position: relative;
+}
+
+.wgu-dd {
+  position: relative;
+}
+
+.wgu-dd-button {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 28px 6px 8px;
+  font: 700 12px/1.2 system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #344054;
+  text-align: left;
+  cursor: pointer;
+  min-height: 31px;
+  position: relative;
+}
+
+.wgu-dd-button::after {
+  content: "▾";
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #667085;
+  font-size: 11px;
+}
+
+.wgu-dd.wgu-dd-open .wgu-dd-button::after {
+  content: "▴";
+}
+
+.wgu-dd-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 2147483647;
+  background: #fff;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(16, 24, 40, .18);
+  padding: 4px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.wgu-dd.wgu-dd-open .wgu-dd-menu {
+  display: block;
+}
+
+.wgu-dd-option {
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  border-radius: 7px;
+  padding: 7px 8px;
+  font: 700 12px/1.2 system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #344054;
+  cursor: pointer;
+}
+
+.wgu-dd-option:hover,
+.wgu-dd-option:focus {
+  background: #f2f4f7;
+  outline: none;
+}
+
+.wgu-dd-option.wgu-dd-selected {
+  background: #eef4ff;
+  color: #1f5eff;
+}
+
+.wgu-dd-button.wgu-stage-draft {
+  border-color: #d0d5dd;
+  background: #f9fafb;
+  color: #475467;
+}
+
+.wgu-dd-button.wgu-stage-internal-review {
+  border-color: #84caff;
+  background: #eff8ff;
+  color: #175cd3;
+}
+
+.wgu-dd-button.wgu-stage-external-review {
+  border-color: #d6bbfb;
+  background: #f4f3ff;
+  color: #5925dc;
+}
+
+.wgu-dd-button.wgu-stage-resolved {
+  border-color: #75e0a7;
+  background: #ecfdf3;
+  color: #067647;
+}
+
+/* Apply priority colors to custom dropdown buttons too. */
+.wgu-dd-button.wgu-priority-critical {
+  border-color: #f97066;
+  background: #fff1f0;
+  color: #912018;
+}
+
+.wgu-dd-button.wgu-priority-important {
+  border-color: #32d583;
+  background: #ecfdf3;
+  color: #05603a;
+}
+
+.wgu-dd-button.wgu-priority-normal {
+  border-color: #7cd4fd;
+  background: #f0f9ff;
+  color: #026aa2;
+}
+
+.wgu-dd-button.wgu-priority-low {
+  border-color: #d0d5dd;
+  background: #f9fafb;
+  color: #475467;
+}
+
+
+/* 1.5.1: card stability + latest/topic layout cleanup */
+.wgu-comment-card {
+  overflow: visible;
+}
+
+#wgu-comments-list {
+  overflow-x: visible;
+}
+
+.wgu-dd-menu {
+  min-width: 100%;
+}
+
+.wgu-comment-detail-row.wgu-latest-row {
+  align-items: flex-start;
+}
+
+.wgu-latest-text {
+  line-height: 1.35;
+}
+
+
+/* 1.5.2: less blue, fixed chat-history viewport, cleaner Latest */
+.wgu-comment-card.wgu-active-card {
+  border: 1.5px solid #123a7a !important;
+  box-shadow: none !important;
+  background: #fff !important;
+}
+
+.wgu-comment-card.wgu-active-card:hover {
+  background: #fff !important;
+}
+
+.wgu-chat-history-body {
+  height: 190px !important;
+  max-height: 190px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-width: thin;
+  scrollbar-color: #98a2b3 transparent;
+}
+
+.wgu-chat-history-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.wgu-chat-history-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.wgu-chat-history-body::-webkit-scrollbar-thumb {
+  background: #98a2b3;
+  border-radius: 999px;
+}
+
+.wgu-latest-text {
+  max-width: 100%;
+}
+
+
+/* 1.5.3: reply focus lock */
+.wgu-comment-card.wgu-reply-focus-locked .wgu-reply-box textarea {
+  outline: 2px solid rgba(31, 94, 255, .18);
+  outline-offset: 1px;
+}
+
+
+/* 1.6.0: mention/native Coda sync hints */
+.wgu-native-sync-row {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #667085;
+}
+
+.wgu-native-sync-row strong {
+  color: #475467;
+}
+
+.wgu-mention-pill {
+  display: inline-block;
+  margin: 3px 4px 0 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #1f5eff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+
+/* 1.6.2: inline @mention composer helper */
+.wgu-reply-box {
+  position: relative;
+}
+
+.wgu-mention-helper {
+  display: none;
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% + 6px);
+  z-index: 2147483647;
+  background: #fff;
+  border: 1px solid #b2ccff;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(16, 24, 40, .20);
+  padding: 8px;
+  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+}
+
+.wgu-mention-helper.wgu-mention-open {
+  display: block;
+}
+
+.wgu-mention-helper-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #344054;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  margin-bottom: 5px;
+}
+
+.wgu-mention-helper-body {
+  font-size: 12px;
+  color: #475467;
+  line-height: 1.35;
+}
+
+.wgu-mention-helper-body code {
+  background: #eef4ff;
+  border-radius: 5px;
+  padding: 1px 4px;
+  color: #1f5eff;
+}
+
+.wgu-mention-helper-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.wgu-mention-helper-actions button {
+  border: 0;
+  border-radius: 7px;
+  padding: 5px 8px;
+  font: 700 11px/1 system-ui, -apple-system, Segoe UI, sans-serif;
+  cursor: pointer;
+}
+
+.wgu-mention-close {
+  background: #eef2f6;
+  color: #344054;
+}
+
+.wgu-mention-insert {
+  background: #1f5eff;
+  color: #fff;
+}
+
+
+/* 1.6.3: _Users GURPS-powered mention people picker */
+.wgu-mention-results {
+  margin-top: 8px;
+  border-top: 1px solid #eef2f6;
+  padding-top: 6px;
+  max-height: 190px;
+  overflow-y: auto;
+}
+
+.wgu-mention-result {
+  width: 100%;
+  border: 0;
+  background: #fff;
+  border-radius: 8px;
+  padding: 7px 8px;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.wgu-mention-result:hover,
+.wgu-mention-result.wgu-mention-selected {
+  background: #eef4ff;
+}
+
+.wgu-mention-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1f5eff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 800 11px/1 system-ui, -apple-system, Segoe UI, sans-serif;
+  overflow: hidden;
+}
+
+.wgu-mention-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wgu-mention-person-main {
+  font: 800 12px/1.2 system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #182230;
+}
+
+.wgu-mention-person-sub {
+  font: 11px/1.25 system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #667085;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wgu-mention-empty,
+.wgu-mention-loading {
+  padding: 7px 8px;
+  font-size: 12px;
+  color: #667085;
+}
+
+.wgu-mention-mode {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  background: #ecfdf3;
+  color: #067647;
+}
+
+.wgu-mention-mode-fallback {
+  background: #fff7ed;
+  color: #b54708;
+}
+
+
+/* 1.6.9: mention result row is the primary action */
+.wgu-mention-result {
+  user-select: none;
+}
+
+.wgu-mention-helper-actions {
+  justify-content: flex-end;
+}
+
+
+/* 1.7.1: bridge status + mention chip preview */
+.wgu-mention-chip-preview {
+  display: none;
+  margin: 6px 0 0;
+  padding: 6px 7px;
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #1e3a8a;
+}
+
+.wgu-comment-card.wgu-card-expanded .wgu-mention-chip-preview:not(:empty) {
+  display: block;
+}
+
+.wgu-rich-mention-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  margin: 0 3px 3px 0;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 800;
+  border: 1px solid #bfdbfe;
+}
+
+.wgu-native-sync-row.wgu-native-sync-warning {
+  color: #92400e;
+}
+
+.wgu-native-sync-row.wgu-native-sync-ok {
+  color: #065f46;
+}
+
+
+/* 1.7.4: production mention picker cleanup */
+.wgu-mention-helper {
+  padding: 6px !important;
+}
+
+.wgu-mention-helper-title,
+.wgu-mention-helper-body,
+.wgu-mention-helper-actions,
+.wgu-mention-chip-preview,
+.wgu-mention-mode {
+  display: none !important;
+}
+
+.wgu-mention-results {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  border-top: 0 !important;
+}
+
+.wgu-mention-result {
+  min-height: 42px;
+}
+
+.wgu-modal-comment-wrap {
+  position: relative;
+}
+
+#wgu-comment-modal .wgu-mention-helper {
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+}
+
+
+/* 1.7.7: hide diagnostic status/pill UI in comment cards */
+.wgu-native-sync-row,
+.wgu-mention-pill {
+  display: none !important;
+}
+
+/* Highlight anchors behave like Word comment anchors: single click activates, double click reveals text. */
+.wgu-coda-highlight {
+  cursor: pointer;
+  user-select: none;
+}
+
+.wgu-highlight-revealing {
+  opacity: 0;
+}
+
+
+/* 1.7.9: let Coda keep native caret/selection hit testing */
+.wgu-coda-highlight {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+/* 1.9.0: comments can be anchored to protected/read-only Coda text without mutating Coda's React DOM. */
+#coda-react-host,
+#content-container,
+[role="grid"],
+[role="gridcell"],
+[role="cell"],
+[contenteditable="false"],
+[class*="Cell"],
+[class*="cell"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+#wgu-coda-highlight-layer {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 2147483644;
+  pointer-events: none;
+}
+
+.wgu-coda-highlight-overlay {
+  position: absolute;
+  box-sizing: border-box;
+  display: block;
+  pointer-events: auto;
+  mix-blend-mode: normal;
+  background: var(--wgu-comment-yellow) !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+/* 1.9.2: active 1:1 protected-cell selection overlay. */
+#wgu-coda-highlight-layer {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483644;
+  pointer-events: none;
+}
+
+.wgu-coda-highlight-overlay {
+  position: fixed !important;
+  box-sizing: border-box;
+  display: block;
+  pointer-events: auto;
+  mix-blend-mode: normal;
+  background: var(--wgu-comment-yellow) !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+#wgu-coda-cell-selection-overlay {
+  position: fixed;
+  z-index: 2147483646;
+  box-sizing: border-box;
+  overflow: hidden;
+  pointer-events: auto;
+  background: var(--wgu-cell-overlay-bg, #fff);
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none !important;
+}
+
+#wgu-coda-cell-selection-overlay .wgu-cell-selection-text {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: var(--wgu-cell-overlay-fg, #1f2937);
+  background: var(--wgu-cell-overlay-bg, transparent);
+  caret-color: transparent;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  cursor: text;
+  outline: none;
+}
+
+#wgu-coda-cell-selection-overlay .wgu-cell-selection-text::selection {
+  background: rgba(250, 204, 21, 0.42);
+  color: inherit;
+}
+
+#wgu-coda-cell-selection-toolbar {
+  position: fixed;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid rgba(148, 163, 184, 0.30);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 8px 24px rgba(16, 24, 40, .18);
+  font: 12px/1.2 system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #344054;
+}
+
+#wgu-coda-cell-selection-toolbar button {
+  border-radius: 9px;
+  padding: 5px 9px;
+  font: 800 12px/1.2 system-ui, -apple-system, Segoe UI, sans-serif;
+  cursor: pointer;
+  transition: filter .12s ease, opacity .12s ease;
+}
+
+#wgu-coda-cell-selection-toolbar button:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+#wgu-coda-cell-selection-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+#wgu-coda-cell-selection-toolbar .wgu-cell-selection-selected {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+
+#wgu-coda-cell-selection-toolbar .wgu-cell-selection-whole {
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  color: #1d4ed8;
+}
+
+#wgu-coda-cell-selection-toolbar .wgu-cell-selection-close {
+  min-width: 28px;
+  padding: 5px 8px;
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #475569;
+}
+
+#wgu-coda-cell-selection-toolbar .wgu-cell-selection-toolbar-note {
+  color: #475467;
+  font-weight: 800;
+}
+
+#wgu-coda-cell-selection-toolbar .wgu-cell-selection-toolbar-or {
+  color: #667085;
+  font-weight: 700;
+}
+
+
+#wgu-coda-cell-selection-toolbar .wgu-cell-selection-hint {
+  min-width: 0;
+  color: #b45309;
+  font-weight: 800;
+  opacity: 0;
+  transform: translateY(-1px);
+  transition: opacity .12s ease;
+  white-space: nowrap;
+}
+
+#wgu-coda-cell-selection-toolbar .wgu-cell-selection-hint.active {
+  opacity: 1;
+}
+
+/* 1.9.23: Full Chat History is explicitly collapsed by default. */
+.wgu-chat-history {
+  display: block !important;
+  margin-top: 10px;
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+}
+.wgu-chat-history-toggle {
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 9px;
+  font: 800 11px/1 system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #475467;
+  background: #f2f4f7;
+  cursor: pointer;
+  text-transform: none;
+}
+.wgu-chat-history-toggle:hover {
+  background: #e9edf5;
+  color: #1d2939;
+}
+.wgu-chat-history-body {
+  display: none !important;
+  margin-top: 7px;
+}
+.wgu-comment-card.wgu-history-expanded .wgu-chat-history-body {
+  display: block !important;
+}
+
+/* 1.9.35: Compact Word-style comment cards. Show the conversation first; lazy-show workflow/anchor details. */
+.wgu-comment-card {
+  padding: 10px 11px;
+}
+
+.wgu-card-compact {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wgu-card-compact-main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.wgu-card-compact-title {
+  font: 800 13px/1.25 system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #1d2939;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wgu-card-compact-subtitle {
+  margin-top: 2px;
+  font: 600 11px/1.25 system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #667085;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wgu-card-expand-toggle {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 8px;
+  min-width: 28px;
+  height: 26px;
+  padding: 0 7px;
+  background: #f2f4f7;
+  color: #475467;
+  font: 900 14px/1 system-ui, -apple-system, Segoe UI, sans-serif;
+  cursor: pointer;
+}
+
+.wgu-card-expand-toggle:hover {
+  background: #e9edf5;
+  color: #1d2939;
+}
+
+.wgu-card-compact-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.wgu-status-pill {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font: 800 11px/1 system-ui, -apple-system, Segoe UI, sans-serif;
+  background: #f2f4f7;
+  color: #475467;
+  white-space: nowrap;
+}
+
+.wgu-status-pill.wgu-stage-internal-review,
+.wgu-status-pill.wgu-stage-external-review,
+.wgu-status-pill.wgu-stage-draft {
+  background: #eef4ff;
+  color: #1849a9;
+}
+
+.wgu-status-pill.wgu-stage-resolved {
+  background: #eaf8ef;
+  color: #0a7431;
+}
+
+.wgu-status-pill.wgu-priority-critical {
+  background: #fff1f0;
+  color: #912018;
+}
+.wgu-status-pill.wgu-priority-important {
+  background: #ecfdf3;
+  color: #05603a;
+}
+.wgu-status-pill.wgu-priority-normal {
+  background: #f0f9ff;
+  color: #026aa2;
+}
+.wgu-status-pill.wgu-priority-low {
+  background: #f8fafc;
+  color: #475467;
+}
+.wgu-status-pill.wgu-anchor-pill {
+  background: #fff7df;
+  color: #896100;
+}
+
+.wgu-card-latest-preview {
+  margin-top: 8px;
+  padding: 8px 9px;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: #344054;
+  font: 12px/1.35 system-ui, -apple-system, Segoe UI, sans-serif;
+}
+
+.wgu-card-latest-preview strong {
+  display: block;
+  color: #475467;
+  font-size: 11px;
+  line-height: 1.15;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+.wgu-card-latest-preview span {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.wgu-card-expanded-only {
+  display: none;
+}
+
+.wgu-comment-card.wgu-card-expanded .wgu-card-expanded-only {
+  display: block;
+}
+
+.wgu-comment-card.wgu-card-expanded .wgu-card-controls {
+  margin-top: 10px;
+}
+
+.wgu-comment-card .wgu-chat-history {
+  display: none !important;
+}
+
+.wgu-comment-card.wgu-card-expanded .wgu-chat-history {
+  display: block !important;
+}
+
+.wgu-comment-card .wgu-comment-details {
+  margin-top: 8px;
+}
+
+/* v1.9.36 Word-familiar comment panel refinements */
+.wgu-wordish-head {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 8px rgba(15, 23, 42, 0.04);
+}
+.wgu-wordish-head .wgu-sidebar-title-row { align-items: center; }
+.wgu-wordish-head .wgu-sidebar-head strong,
+.wgu-wordish-head strong { font-size: 15px; letter-spacing: -0.01em; }
+.wgu-comment-count {
+  align-self: center;
+  color: #334155;
+  font: 600 12px/1 system-ui, -apple-system, Segoe UI, sans-serif;
+  margin: 0 4px;
+  white-space: nowrap;
+}
+#wgu-new-comment-top.wgu-word-new-comment {
+  background: #ffffff;
+  border: 1px solid #d1d5db !important;
+  border-radius: 7px !important;
+  color: #111827;
+  font-weight: 750;
+  padding: 6px 10px !important;
+  box-shadow: 0 1px 2px rgba(15,23,42,.06);
+}
+#wgu-new-comment-top.wgu-word-new-comment:hover { background: #f8fafc; }
+.wgu-advanced-controls { display: none; }
+#wgu-coda-comment-sidebar.wgu-show-advanced-controls .wgu-advanced-controls { display: flex; }
+#wgu-filter-comments { font-weight: 800; }
+
+.wgu-comment-card {
+  margin: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  border-color: #d9d9d9;
+  box-shadow: 0 1px 2px rgba(15,23,42,.035);
+}
+.wgu-comment-card:hover { background: #fbfbfb; border-color: #c7d2fe; }
+.wgu-word-thread-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.wgu-author-avatar {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #2563eb;
+  color: #fff;
+  font: 800 12px/1 system-ui, -apple-system, Segoe UI, sans-serif;
+}
+.wgu-word-thread-main { min-width: 0; flex: 1 1 auto; }
+.wgu-word-author-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.wgu-word-author-line strong {
+  font: 760 13px/1.25 system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wgu-word-meta-line {
+  margin-top: 1px;
+  color: #475569;
+  font: 500 11.5px/1.25 system-ui, -apple-system, Segoe UI, sans-serif;
+}
+.wgu-word-anchor-preview {
+  margin: 9px 0 0 38px;
+  padding: 8px 10px;
+  border-left: 3px solid #fde68a;
+  background: #fffbeb;
+  color: #374151;
+  font: 12px/1.35 system-ui, -apple-system, Segoe UI, sans-serif;
+  border-radius: 7px;
+}
+.wgu-word-latest-preview {
+  margin: 9px 0 0 38px;
+  color: #111827;
+  font-size: 13px;
+}
+.wgu-word-latest-preview span { display: block; }
+.wgu-word-pills { margin-left: 38px; margin-top: 9px; }
+.wgu-comment-card-actions { margin-left: 38px; }
+.wgu-reply-box { margin-left: 38px; }
+.wgu-chat-history { margin-left: 38px; }
+.wgu-card-expanded-only { margin-left: 38px; }
+.wgu-panel-nudge-note { border-radius: 9px; }
+
+/* v1.9.39: simplify expanded cards for Word-familiar users. Stage/priority are removed. */
+.wgu-comment-details-disclosure {
+  margin-top: 10px;
+  border-top: 1px solid #eef0f4;
+  padding-top: 8px;
+  color: #344054;
+  font: 12px/1.35 system-ui, -apple-system, Segoe UI, sans-serif;
+}
+.wgu-comment-details-disclosure > summary {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 8px;
+  padding: 5px 8px;
+  background: #f5f7fb;
+  color: #344054;
+  font-weight: 800;
+  list-style: none;
+  user-select: none;
+}
+.wgu-comment-details-disclosure > summary::-webkit-details-marker { display: none; }
+.wgu-comment-details-disclosure > summary::after {
+  content: "▾";
+  font-size: 10px;
+  color: #667085;
+}
+.wgu-comment-details-disclosure[open] > summary::after { content: "▴"; }
+.wgu-comment-details-disclosure .wgu-comment-details {
+  margin-top: 8px;
+  padding: 0;
+}
+.wgu-comment-card.wgu-card-expanded .wgu-card-controls { display: none !important; }
+.wgu-word-pills:empty { display: none; }
+
+
+/* v1.9.42: remove card-level dropdown/history controls. Reply is the only expansion affordance. */
+.wgu-card-expand-toggle,
+.wgu-chat-history,
+.wgu-chat-history-toggle,
+.wgu-chat-history-body {
+  display: none !important;
+}
+
+/* 1.9.49: Native text-range coloring via CSS Custom Highlight API.
+   This colors the resolved anchor text without DOM mutation, overlays, or brackets. */
+::highlight(wgu-coda-comment-text) {
+  color: #b85f00;
+  background-color: rgba(255, 235, 145, .42);
+}
+::highlight(wgu-coda-comment-text-active) {
+  color: #9a4f00;
+  background-color: rgba(255, 226, 100, .58);
+}
+
+/* 1.9.46-1.9.48 legacy bracket/fill styles retained only so older injected nodes clean up safely.
+   1.9.49 stops creating these for performance/stability. */
+.wgu-coda-anchor-soft-fill {
+  position: fixed;
+  z-index: 2147483000;
+  pointer-events: none !important;
+  user-select: none !important;
+  background: rgba(255, 235, 145, .28);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(242, 140, 0, .04);
+  will-change: left, top, width, height;
+}
+
+
+.wgu-coda-anchor-soft-fill.wgu-active-highlight {
+  background: rgba(255, 232, 120, .38);
+  box-shadow: inset 0 0 0 1px rgba(242, 140, 0, .10);
+}
+
+.wgu-coda-bracket-anchor {
+  position: fixed;
+  z-index: 2147483001;
+  color: #f28c00;
+  font-weight: 900;
+  font-size: 18px;
+  line-height: 18px;
+  pointer-events: none !important;
+  user-select: none !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.85);
+  will-change: left, top;
+}
+
+
+.wgu-coda-bracket-anchor.wgu-active-highlight {
+  color: #ff7a00;
+  text-shadow: 0 0 0 2px rgba(255,122,0,.25), 0 1px 0 rgba(255,255,255,.9);
+}
+
+.wgu-coda-comment-icon {
+  position: fixed;
+  z-index: 2147483002;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 0;
+  background-color: transparent;
+  background-image: url("assets/comment-icon.ico");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  color: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 2px 7px rgba(0,0,0,.14);
+  font-size: 0;
+  line-height: 1;
+  will-change: left, top;
+}
+
+
+.wgu-coda-comment-icon:hover,
+.wgu-coda-comment-icon.wgu-active-highlight {
+  background-color: transparent;
+  box-shadow: 0 0 0 3px rgba(7,59,122,.18), 0 3px 9px rgba(0,0,0,.2);
+}
+
+.wgu-coda-comment-icon.wgu-highlight-revealing {
+  animation: wguIconRevealPulse 900ms ease-out 2;
+}
+
+@keyframes wguIconRevealPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(7,59,122,.34), 0 2px 7px rgba(0,0,0,.18); }
+  70% { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(7,59,122,0), 0 3px 9px rgba(0,0,0,.2); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(7,59,122,0), 0 2px 7px rgba(0,0,0,.18); }
+}
+
+
+.wgu-coda-comment-icon.wgu-anchor-registry-focus {
+  animation: wguIconRevealPulse 900ms ease-out 1;
+  box-shadow: 0 0 0 4px rgba(7,59,122,.22), 0 3px 10px rgba(0,0,0,.22);
+}
+
+
+.wgu-comment-card.wgu-anchor-not-mounted {
+  outline: 2px solid rgba(245, 124, 0, .35);
+  box-shadow: 0 0 0 3px rgba(245, 124, 0, .08);
+}
+
+.wgu-comment-card.wgu-anchor-not-mounted::after {
+  content: "Anchor not currently visible";
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #9a5200;
+}
+
+/* v1.10.12: simplified card states per user testing feedback. */
+.wgu-comment-card {
+  border: 1px solid #191970 !important; /* midnight blue */
+  background: #ffffff !important;       /* inactive white */
+  box-shadow: 0 1px 2px rgba(15,23,42,.04) !important;
+}
+.wgu-comment-card:hover {
+  background: #f8fbff !important;
+  border-color: #191970 !important;
+}
+.wgu-comment-card.wgu-active-card {
+  border: 1px solid #191970 !important; /* midnight blue active + inactive */
+  background: #eef7ff !important;       /* very light blue active */
+  box-shadow: 0 1px 2px rgba(15,23,42,.04) !important;
+}
+.wgu-comment-card.wgu-active-card:hover {
+  background: #eaf5ff !important;
+  border-color: #191970 !important;
+}

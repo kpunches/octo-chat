@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>WGU Coda Comment Assistant Options</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, sans-serif; padding: 24px; max-width: 920px; }
+    h1 { margin-top: 0; }
+    label { display:block; margin-top: 14px; font-weight: 700; }
+    input { width: 100%; box-sizing: border-box; padding: 9px; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    button { margin-top: 18px; margin-right: 8px; padding: 8px 14px; cursor:pointer; }
+    .hint { color:#555; font-size: 13px; }
+    .ok { color: #0a7f36; font-weight: 700; }
+    .bad { color: #a32014; font-weight: 700; }
+    .box { background:#f7f8fa; border:1px solid #e4e6eb; border-radius:10px; padding:12px; margin-top:18px; }
+    code { background:#eef; padding:1px 4px; border-radius:4px; }
+  </style>
+</head>
+<body>
+  <h1>WGU Coda Comment Assistant</h1>
+  <p>Store Coda API tokens locally in this browser. Do not paste tokens into chats or tickets.</p>
+
+  <label>Source / Extension Doc API Token</label>
+  <input id="sourceApiToken" type="password" autocomplete="off" placeholder="Paste token for the Coda doc where the extension is running" />
+  <div class="hint">Used for reading page/table context from the source doc. This can be a limited/read-oriented token where possible.</div>
+
+  <label>Comment Engine API Token</label>
+  <input id="commentEngineApiToken" type="password" autocomplete="off" placeholder="Paste token for the Comment Engine doc" />
+  <div class="hint">Used for reading/writing _Threads, _Messages, and _Access in the Comment Engine doc.</div>
+
+  <label>Source / Extension Doc ID</label>
+  <input id="docId" />
+  <div class="hint">The Coda doc where the extension is running / reading page context from. This is not the Comment Engine doc.</div>
+
+  <label>Comment Engine Doc ID</label>
+  <input id="commentEngineDocId" />
+
+  <label>Comment Engine _Threads Table ID</label>
+  <input id="engineThreadsTableId" />
+
+  <label>Comment Engine _Messages Table ID</label>
+  <input id="engineMessagesTableId" />
+
+  <label>Comment Engine _Access Table ID</label>
+  <input id="engineAccessTableId" />
+
+  <label>Legacy _CommentTarget Table ID</label>
+  <input id="targetTableId" />
+  <div class="hint">Used only for legacy/source-doc compatibility. New comments write to the Comment Engine tables.</div>
+
+  <label>_DiscussableFields Table ID</label>
+  <input id="fieldsTableId" />
+
+  <label>Panel Width, px</label>
+  <input id="panelWidth" />
+
+  <label>Native Coda Comment Bridge URL</label>
+  <input id="nativeBridgeUrl" placeholder="Optional WGU-approved bridge endpoint, e.g. https://comments.wgu.edu/coda/native-comment" />
+  <div class="hint">Optional. Required for native Coda comments and @mention notifications. Leave blank to store mention metadata only.</div>
+
+  <button id="save">Save</button>
+  <button id="test">Save + Test API Keys</button>
+  <span id="status"></span>
+
+  <div class="box">
+    <strong>Expected defaults</strong>
+    <div class="hint">
+      Source / Extension Doc ID: <code>zR7eW6CJsf</code><br>
+      Comment Engine Doc ID: <code>vVCvCSY3jx</code><br>
+      _Threads: <code>grid-TzMLOYO0fU</code><br>
+      _Messages: <code>grid-Tb0THna6ie</code><br>
+      _Access: <code>grid-ARo8r4rHYO</code><br>
+      Legacy _CommentTarget: <code>grid-GYhi07Ef8b</code><br>
+      _DiscussableFields: <code>grid-vUUFPHUJhv</code><br>
+      Panel width: <code>390</code>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
